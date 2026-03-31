@@ -5,6 +5,7 @@ import time
 import numpy as np
 import speech_recognition as sr
 import yuz_takip
+import ses_koçu
 
 # --- GLOBAL DEĞİŞKENLER (Thread'ler arası iletişim için) ---
 # Bilgisayar mühendisliğinde buna 'Shared Memory' benzeri bir yaklaşım diyoruz.
@@ -38,17 +39,20 @@ def yuz_takibi_islem():
         results = face_mesh.process(rgb_image)
 
         if results.multi_face_landmarks:
-            #yuz_takip.py 
-            mesaj_yuz = yuz_takip.analiz_et(yuz.landmark)
+            for yuz in results.multi_face_landmarks:
+                # yuz_takip.py
+                mesaj_yuz = yuz_takip.analiz_et(yuz.landmark)
 
-            #puanlama
-            if "BAKIYORSUN" in mesaj_yuz or "TUT" in mesaj_yuz:
-                puan -=0.05
+                # puanlama
+                if "BAKIYORSUN" in mesaj_yuz or "TUT" in mesaj_yuz:
+                    puan -= 0.05
         else:
             mesaj_yuz = "YUZ BULUNAMADI!"
             puan -= 0.01  # Hafif puan kırışı
+
         # Görüntüyü ana döngüye gönder (Kritik Adım)
         kare_goruntu = image
+
         # CPU'yu %100 yapmamak için çok kısa bir mola
         time.sleep(0.01)
 
@@ -58,24 +62,20 @@ def yuz_takibi_islem():
 # --- 2. MODÜL: SES ANALİZİ THREAD'İ ---
 def ses_analizi_islem():
     global mesaj_ses, puan, calisiyor
-    r = sr.Recognizer()
 
     while calisiyor:
-        with sr.Microphone() as source:
-            try:
-                # 2 saniyelik kısa dinlemeler RAM'i korur
-                audio = r.listen(source, phrase_time_limit=2)
-                text = r.recognize_google(audio, language="tr-TR").lower()
+        # 1. Modülden raporu alma
+        rapor, hata_var_mi = ses_koçu.sesi_analiz_et()
 
-                if "eee" in text or "ııı" in text:
-                    mesaj_ses = "Dolgulari Azalt!"
-                    puan -= 2
-                else:
-                    mesaj_ses = f"Denen: {text[:15]}..."
-            except:
-                mesaj_ses = "Gurultu veya Sessizlik"
+        # 2. Mesajı güncelle
+        mesaj_ses = rapor
 
-        time.sleep(0.5)  # Ses analizi daha seyrek çalışabilir
+        # 3. Puan kontrolü
+        if hata_var_mi:
+            puan -= 1
+
+        # 4. CPU dinlendirme
+        time.sleep(0.1)
 
 
 # --- 3. ANA DÖNGÜ (GÖRÜNTÜLEME) ---
