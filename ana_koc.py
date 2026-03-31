@@ -4,6 +4,7 @@ import threading
 import time
 import numpy as np
 import speech_recognition as sr
+import yuz_takip
 
 # --- GLOBAL DEĞİŞKENLER (Thread'ler arası iletişim için) ---
 # Bilgisayar mühendisliğinde buna 'Shared Memory' benzeri bir yaklaşım diyoruz.
@@ -31,15 +32,18 @@ def yuz_takibi_islem():
         if not success:
             continue
 
-        # RAM dostu olması için görüntüyü küçültelim fakat gösterirken net kalmalı
+        # RAM dostu olması için görüntüyü küçülür fakat gösterirken net kalmalı
         image_small = cv2.resize(image, (480, 360))
         rgb_image = cv2.cvtColor(image_small, cv2.COLOR_BGR2RGB)
         results = face_mesh.process(rgb_image)
 
         if results.multi_face_landmarks:
-            # Buraya yuz_takip.py'deki o meşhur derinlik ve bakış hesaplarını ekleyeceğiz
-            # Şimdilik prototip olarak çalışıyor diyelim
-            mesaj_yuz = "Kameraya Bakiyor"
+            #yuz_takip.py 
+            mesaj_yuz = yuz_takip.analiz_et(yuz.landmark)
+
+            #puanlama
+            if "BAKIYORSUN" in mesaj_yuz or "TUT" in mesaj_yuz:
+                puan -=0.05
         else:
             mesaj_yuz = "YUZ BULUNAMADI!"
             puan -= 0.01  # Hafif puan kırışı

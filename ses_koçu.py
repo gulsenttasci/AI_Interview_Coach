@@ -1,7 +1,7 @@
 import sounddevice as sd
 import numpy as np
 import librosa
-import speech_recognition
+import speech_recognition as sr
 import time
 
 
@@ -12,13 +12,22 @@ THRESHOLD_VOLUME = 0.01  # Sesin kısıklık eşiği
 GECERSIZ_KELIMELER = ["eee", "ııı", "şey", "yani", "ımm", "mmm", "aaa"]
 
 
-def analiz_et():
+def sesi_analiz_et():
+    """
+    Ses dinleme,
+    Frekans(stres) analizi,
+    Metine çevirme
+    Geri dönüt : Mesaj , Puan Güncelleme
+
+    """
     r = sr.Recognizer()
+    puan_kir = False  # flag
+    final_mesaj = ""
 
-    print("Mülakat başladı! Sesin ve duygu durumun analiz ediliyor...")
+    try:
 
-    while True:
-        # 1. SES KAYDI(Anlık veri çekme)
+        # 1. SES KAYDI VE ANALİZ(Librosa & Numpy)
+        # 4GB RAM için dostane bir süre
         kayit = sd.rec(int(SURE * FS), samplerate=FS, channels=1)
         sd.wait()
         ses_verisi = kayit.flatten()
@@ -26,8 +35,10 @@ def analiz_et():
         # 2.SES SEVİYESİ(VOLUME) ANALİZİ
         rms = np.sqrt(np.mean(ses_verisi**2))  # Kareli ortalama(Enerji)
         if rms < THRESHOLD_VOLUME:
-            print(
-                "SESİN ÇOK KISIK: Biraz daha özgüvenli ve yüksek sesle konuşabilirsin."
+
+            return (
+                "SESİN ÇOK KISIK: Biraz daha özgüvenli ve yüksek sesle konuşabilirsin.",
+                True,
             )
 
         # 3.DUYGU VE STRES ANALİZİ(Librosa ile Pitch Takibi)
@@ -36,38 +47,46 @@ def analiz_et():
         pitch = np.mean(pitches[pitches > 0]) if np.any(pitches > 0) else 0
 
         if pitch > 300:  # Yüksek frekans genellikle stres/heyecan belirtisidir
-            print(
-                "SAKİN OL: Ses tonunda hafif bir heyecan seziyorum,derin bir nefes al ve gevşe."
-            )
 
-        # 4.METİN ANALİZİ(WPM ve "eee,ııı...")
-        try:
-            # Sesi geçici bir dosyaya yazmadan direkt analiz etmek için Raw kullanabiliriz
-            # Şimdilik basitlik için standardı  kullanalım
-            with sr.Microphone() as kaynak:
-                audio = r.listen(kaynak, phrase_time_limit=SURE)
-                metin = r.recognize_google(audio, language="tr-TR").lower()
+            return (
+                "SAKİN OL: Ses tonunda hafif bir heyecan seziyorum,derin bir nefes al ve gevşe.",
+                False,
+            )  # Puan kırılmıyor,sadece uyarı
 
-                # Gereksiz kelime kontrolü
-                bulunan_dolgular = [
-                    kelime for kelime in GECERSIZ_KELIMELER if kelime in metin
-                ]
-                if bulunan_dolgular:
-                    print(
-                        f"DİKKAT: Çok fazla '{bulunan_dolgular[0]}' kullanıyorsun, duraksamaktan çekinme :)"
-                    )
+        # 4.METİN ANALİZİ(WPM ve "eee,ııı...(Dolgu Kelimeleri)")
 
-                # WPM(Dakikadaki Kelime Sayısı) Hesaplama
-                kelime_sayisi = len(metin.split())
-                wpm = (kelime_sayisi / SURE) * 60
-                if wpm > 150:
-                    print(
-                        f"ÇOK HIZLI KONUŞUYORSUN({int(wpm)} WPM): Biraz yavaşla.Ne acelen var :)"
-                    )
+        # Sesi geçici bir dosyaya yazmadan direkt analiz etmek için Raw kullanabilir
+        # Şimdilik basitlik için standardı  kullanalım
+        with sr.Microphone() as kaynak:
+            # Arka plan hızlıca taranır
+            r.adjust_for_ambient_noise(kaynak, duration=0.2)
+            audio = r.listen(kaynak, phrase_time_limit=SURE)
+            metin = r.recognize_google(audio, language="tr-TR").lower()
 
-        except:
-            pass  # Ses anlaşılmazsa sessizce devam et
+            # Gereksiz kelime(Dolgu) kontrolü
+            bulunan_dolgular = [
+                kelime for kelime in GECERSIZ_KELIMELER if kelime in metin
+            ]
+            if bulunan_dolgular:
+                print(
+                    f"DİKKAT: Çok fazla '{bulunan_dolgular[0]}' kullanıyorsun, duraksamaktan çekinme :)",
+                    True,
+                )
+
+            # WPM(Dakikadaki Kelime Sayısı) Hesaplama
+            wpm = (len(metin.split()) / SURE) * 60
+            if wpm > 150:
+                print(
+                    f"ÇOK HIZLI KONUŞUYORSUN({int(wpm)} WPM): Biraz yavaşla.Ne acelen var :)",
+                    True,
+                )
+
+    except Exception as e:
+        return "Mülakat başladı,dinliyorum...", False
 
 
-# Çalıştır
-analiz_et()
+# Test
+if __name__ == "__main__":
+    print("Ses modülü test ediliyor...")
+    while True:
+        print(sesi_analiz_et())
