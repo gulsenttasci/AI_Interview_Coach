@@ -55,7 +55,7 @@ def sesi_analiz_et():
 
         # 4.METİN ANALİZİ(WPM ve "eee,ııı...(Dolgu Kelimeleri)")
 
-        # Sesi geçici bir dosyaya yazmadan direkt analiz etmek için Raw kullanabilir
+        # Sesi geçici bir dosyaya yazmadan direkt analiz etmek için Raw kullanılabilir
         # Şimdilik basitlik için standardı  kullanalım
         with sr.Microphone() as kaynak:
             # Arka plan hızlıca taranır

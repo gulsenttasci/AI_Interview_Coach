@@ -88,30 +88,39 @@ def baslat():
 
     t_yuz.start()
     t_ses.start()
+    
+    #Pencereyi oluşur ve boyutlandırılabilir (gpu!)
+    cv2.namedWindow("AI Interview Coach", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("AI Interview Coach", 800, 600) # Pencere 800x600 ebatlarında
 
     # OpenCV Penceresi
     while True:
         # Eğer Thread'den görüntü geldiyse onu kullan, gelmediyse siyah ekran göster
         if kare_goruntu is not None:
-            ekran = kare_goruntu.copy()
+            # Görüntüyü ekranı kaplayacak şekilde yeniden boyutlandır
+            ekran = cv2.resize(kare_goruntu, (800, 600))
         else:
-            ekran = np.zeros((480, 640, 3), dtype=np.uint8)
+            ekran = np.zeros((600, 800, 3), dtype=np.uint8)
 
-        # YAZILARI GÖRÜNTÜNÜN ÜZERİNE BİNDİRME İŞLEMİ (HUD - Head Up Display)
+        #1.ALT PANEL: YAZILARI GÖRÜNTÜNÜN ÜZERİNE BİNDİRME İŞLEMİ (HUD - Head Up Display)
         # Alt kısma yarı şeffaf bir bant eklendi
-        cv2.rectangle(ekran, (0, 380), (640, 480), (0, 0, 0), -1)
+        cv2.rectangle(ekran, (0, 480), (800, 600), (0, 0, 0), -1)
 
+        # 2. YAZILARI YENİDEN KONUMLANDIR (Birbirine girmemeleri için aralıkları açıldı)
+        # Font büyüklüğünü (0.7) ve kalınlığını (2) optimize edildi
+        
+        # SOL TARAF: Durum Mesajları
         cv2.putText(
-            ekran, f"Goz Durumu: {mesaj_yuz}", (20, 420), 2, 0.7, (0, 255, 0), 1
+            ekran, f"Goz Durumu: {mesaj_yuz}", (30, 525), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2    
         )
         cv2.putText(
-            ekran, f"Ses Durumu: {mesaj_ses}", (20, 460), 2, 0.7, (255, 255, 0), 1
+            ekran, f"Ses Durumu: {mesaj_ses}", (30, 570), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2
         )
         cv2.putText(
-            ekran, f"TOPLAM PUAN: {int(puan)}", (385, 440), 2, 0.8, (0, 0, 220), 2
+            ekran, f"TOPLAM PUAN: {int(puan)}", (550, 555), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 220), 3
         )
 
-        cv2.imshow("AI Interview Coach - v1.0", ekran)
+        cv2.imshow("AI Interview Coach - v1.1", ekran)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             calisiyor = False
