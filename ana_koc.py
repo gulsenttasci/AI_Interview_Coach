@@ -11,16 +11,17 @@ mesaj_yuz = "Baslatiliyor..."
 mesaj_ses = "Dinleniyor..."
 puan = 100
 calisiyor = True
+kare_goruntu=None # Kameradan gelen görüntünün saklandığı kısım
 
 # --- 1. MODÜL: YÜZ TAKİBİ THREAD'İ ---
 def yuz_takibi_islem():
-    global mesaj_yuz, puan, calisiyor
+    global mesaj_yuz, puan, calisiyor,kare_goruntu #kare_goruntu eklendi
     
     mp_face_mesh = mp.solutions.face_mesh
     face_mesh = mp_face_mesh.FaceMesh(
         max_num_faces=1, 
         refine_landmarks=True, 
-        min_detection_confidence=0.5
+        min_detection_confidence=0.4 #mediapipe default value=0.5 
     )
     cap = cv2.VideoCapture(0)
 
@@ -28,9 +29,9 @@ def yuz_takibi_islem():
         success, image = cap.read()
         if not success: continue
 
-        # RAM dostu olması için görüntüyü küçültelim (Senin PC için kritik!)
-        image = cv2.resize(image, (640, 480))
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # RAM dostu olması için görüntüyü küçültelim fakat gösterirken net kalmalı
+        image_small = cv2.resize(image, (480, 360))
+        rgb_image = cv2.cvtColor(image_small, cv2.COLOR_BGR2RGB)
         results = face_mesh.process(rgb_image)
 
         if results.multi_face_landmarks:
@@ -40,7 +41,8 @@ def yuz_takibi_islem():
         else:
             mesaj_yuz = "YUZ BULUNAMADI!"
             puan -= 0.01 # Hafif puan kırışı
-        
+        # Görüntüyü ana döngüye gönder (Kritik Adım)
+        kare_goruntu=image
         # CPU'yu %100 yapmamak için çok kısa bir mola
         time.sleep(0.01)
 
@@ -70,7 +72,7 @@ def ses_analizi_islem():
 
 # --- 3. ANA DÖNGÜ (GÖRÜNTÜLEME) ---
 def baslat():
-    global calisiyor
+    global calisiyor,kare_goruntu #kare_goruntu eklendi
     
     # Thread'leri tanımla
     t_yuz = threading.Thread(target=yuz_takibi_islem)
@@ -81,15 +83,23 @@ def baslat():
 
     # OpenCV Penceresi
     while True:
-        # Boş bir siyah ekran üzerine verileri yazdıralım 
-        # (Kamerayı Thread içinde açtığımız için burada sadece verileri gösteriyoruz)
-        ekran = np.zeros((400, 600, 3), dtype=np.uint8)
+        # Eğer Thread'den görüntü geldiyse onu kullan, gelmediyse siyah ekran göster
+        if kare_goruntu is not None:
+            ekran = kare_goruntu.copy()
+        else:
+            ekran = np.zeros((480, 640, 3), dtype=np.uint8)
         
-        cv2.putText(ekran, f"Goz Durumu: {mesaj_yuz}", (50, 100), 2, 0.8, (0, 255, 0), 2)
-        cv2.putText(ekran, f"Ses Durumu: {mesaj_ses}", (50, 200), 2, 0.8, (255, 255, 0), 2)
-        cv2.putText(ekran, f"TOPLAM PUAN: {int(puan)}", (50, 300), 2, 1, (0, 0, 255), 3)
+
+        # YAZILARI GÖRÜNTÜNÜN ÜZERİNE BİNDİRME İŞLEMİ (HUD - Head Up Display)
+        # Alt kısma yarı şeffaf bir bant eklendi
+        cv2.rectangle(ekran, (0, 380), (640, 480), (0, 0, 0), -1)
+
+
+        cv2.putText(ekran, f"Goz Durumu: {mesaj_yuz}", (20, 420), 2, 0.7, (0, 255, 0), 1)
+        cv2.putText(ekran, f"Ses Durumu: {mesaj_ses}", (20, 460), 2, 0.7, (255, 255, 0), 1)
+        cv2.putText(ekran, f"TOPLAM PUAN: {int(puan)}", (450, 440), 2, 1.2, (0, 0, 255), 2)
         
-        cv2.imshow("AI Interview Coach - Integrated", ekran)
+        cv2.imshow("AI Interview Coach - v1.0", ekran)
         
         if cv2.waitKey(1) & 0xFF == ord('q'):
             calisiyor = False
@@ -99,3 +109,5 @@ def baslat():
 
 if __name__ == "__main__":
     baslat()
+
+cv2.destroyAllWindows()
