@@ -8,7 +8,7 @@ def sesi_dinle():
 
 
         try:
-            metin=r.recognize_google(audio,language"tr-TR")
+            metin=r.recognize_google(audio,language="tr-TR")
             print(f"Söylediğin:{metin}")
 
             #Basit bir ton/duygu analizi mantığı

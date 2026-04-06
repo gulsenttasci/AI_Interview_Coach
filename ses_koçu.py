@@ -37,7 +37,7 @@ def sesi_analiz_et():
         if rms < THRESHOLD_VOLUME:
 
             return (
-                "SESİN ÇOK KISIK: Biraz daha özgüvenli ve yüksek sesle konuşabilirsin.",
+                "SESİN COK KISIK: Biraz yuksek sesle konusabilirsin.",
                 True,
             )
 
@@ -68,18 +68,12 @@ def sesi_analiz_et():
                 kelime for kelime in GECERSIZ_KELIMELER if kelime in metin
             ]
             if bulunan_dolgular:
-                print(
-                    f"DİKKAT: Çok fazla '{bulunan_dolgular[0]}' kullanıyorsun, duraksamaktan çekinme :)",
-                    True,
-                )
+                return f"DIKKAT: Cok fazla '{bulunan_dolgular[0]}' kullaniyorsun.Duraksamaktan çekinme :)", True
 
             # WPM(Dakikadaki Kelime Sayısı) Hesaplama
             wpm = (len(metin.split()) / SURE) * 60
             if wpm > 150:
-                print(
-                    f"ÇOK HIZLI KONUŞUYORSUN({int(wpm)} WPM): Biraz yavaşla.Ne acelen var :)",
-                    True,
-                )
+                return f"COK HIZLI KONUSUYORSUN ({int(wpm)} WPM): Biraz yavasla.", True
 
     except Exception as e:
         return "Mülakat başladı,dinliyorum...", False
