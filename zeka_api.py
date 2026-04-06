@@ -1,7 +1,10 @@
 import requests
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
-API_KEY = "AIzaSyBUI7_HwggjomXfGsvlNl1a8JQUtZDR2CM"
+API_KEY = os.getenv("GEMINI_API_KEY")
 
 def cevabi_degerlendir(adayin_cevabi):
     """
